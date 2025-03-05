@@ -31,19 +31,21 @@ public abstract class Vehicle {
 
     public abstract String toCSV();
     public abstract String toString();
-
     public abstract void displayInfo();
 
+    // equals() - porównuje pojazdy na podstawie ID
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) return false; // Sprawdzenie typu
+
         Vehicle vehicle = (Vehicle) o;
-        return id == vehicle.id && year == vehicle.year && Double.compare(price, vehicle.price) == 0 && rented == vehicle.rented && Objects.equals(brand, vehicle.brand) && Objects.equals(model, vehicle.model);
+        return id == vehicle.id;
     }
 
+    //hashCode() - opiera się na id
     @Override
     public int hashCode() {
-        return Objects.hash(id, brand, model, year, price, rented);
+        return Objects.hash(id);
     }
 }
