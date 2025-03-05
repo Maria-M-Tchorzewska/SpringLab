@@ -18,16 +18,16 @@ public class Motorcycle extends Vehicle {
 
     @Override
     public void displayInfo() {
-        System.out.println("Motorcycle - " + toString() + ", Category: " + category);
+        System.out.println(toString());
     }
 
     @Override
     public String toCSV() {
-        return ";" + category;
+        return id + ";" + brand + ";" + model + ";" + year + ";" + price + ";" + rented + ";Motorcycle;" + category;
     }
 
     @Override
     public String toString() {
-        return ", Category: " + category;
+        return "Motorcycle - ID: " + id + ", " + brand + " " + model + ", " + year + ", $" + price + ", Rented: " + (rented ? "Yes" : "No") + ", Category: " + category;
     }
 }

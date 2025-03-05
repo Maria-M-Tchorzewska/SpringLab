@@ -1,5 +1,7 @@
 package org.example;
 
+import java.util.Objects;
+
 public abstract class Vehicle {
     private static int idCounter = 1;
     protected final int id;
@@ -31,4 +33,17 @@ public abstract class Vehicle {
     public abstract String toString();
 
     public abstract void displayInfo();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Vehicle vehicle = (Vehicle) o;
+        return id == vehicle.id && year == vehicle.year && Double.compare(price, vehicle.price) == 0 && rented == vehicle.rented && Objects.equals(brand, vehicle.brand) && Objects.equals(model, vehicle.model);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, brand, model, year, price, rented);
+    }
 }
