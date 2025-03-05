@@ -1,5 +1,6 @@
 1;Toyota;Corolla;2022;25000.0;false;Car
 2;Honda;Civic;2021;23000.0;false;Car
 3;Yamaha;R1;2022;20000.0;false;Motorcycle;Sport
-4;Harley-Davidson;Street 750;2021;15000.0;false;Motorcycle;Cruiser
+4;Harley-Davidson;Street 750;2021;15000.0;true;Motorcycle;Cruiser
 5;lall;e;333;2.0;false;Car
+6;lalall;x;2005;343434.0;false;Car

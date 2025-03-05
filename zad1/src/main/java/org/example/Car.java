@@ -6,6 +6,16 @@ public class Car extends Vehicle{
     }
 
     @Override
+    public String toCSV() {
+        return "";
+    }
+
+    @Override
+    public String toString() {
+        return "";
+    }
+
+    @Override
     public void displayInfo() {
         System.out.println("Car - " + toString());
     }

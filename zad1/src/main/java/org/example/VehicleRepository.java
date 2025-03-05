@@ -2,11 +2,12 @@ package org.example;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class VehicleRepository implements IVehicleRepository {
     private static final String FILE_NAME = "vehicles.csv";
-    private List<Vehicle> vehicles = new ArrayList<>();
+    private final List<Vehicle> vehicles = new ArrayList<>();
 
     public VehicleRepository() {
         load();
@@ -16,7 +17,7 @@ public class VehicleRepository implements IVehicleRepository {
     public void rentVehicle(int vehicleId) {
         for (Vehicle v : vehicles) {
             if (v.getId() == vehicleId && !v.isRented()) {
-                v.rent();
+                v.setRented(true); //zmiana mozliwosci
                 save();
                 return;
             }
@@ -28,7 +29,7 @@ public class VehicleRepository implements IVehicleRepository {
     public void returnVehicle(int vehicleId) {
         for (Vehicle v : vehicles) {
             if (v.getId() == vehicleId && v.isRented()) {
-                v.returnVehicle();
+                v.setRented(false); //zmiana mozliwosci
                 save();
                 return;
             }
@@ -38,7 +39,7 @@ public class VehicleRepository implements IVehicleRepository {
 
     @Override
     public List<Vehicle> getVehicles() {
-        return vehicles;
+        return Collections.unmodifiableList(vehicles); //zabezpieczenie przed modyfikacją
     }
 
     @Override
