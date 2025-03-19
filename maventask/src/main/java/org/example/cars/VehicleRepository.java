@@ -1,4 +1,4 @@
-package org.example;
+package org.example.cars;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -7,7 +7,7 @@ import java.util.List;
 
 public class VehicleRepository implements IVehicleRepository {
     private static final String FILE_NAME = "vehicles.csv";
-    private final List<Vehicle> vehicles = new ArrayList<>();
+    private static final List<Vehicle> vehicles = new ArrayList<>();
 
     public VehicleRepository() {
         load();
