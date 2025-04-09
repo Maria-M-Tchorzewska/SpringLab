@@ -13,13 +13,19 @@ public class User {
         this.role = role;
     }
 
-    public String getId() { return id; }
-    public String getLogin() { return login; }
-    public String getPassword() { return password; }
-    public String getRole() { return role; }
+    public String getId() {
+        return id;
+    }
 
-    @Override
-    public String toString() {
-        return "User{id='" + id + "', login='" + login + "', role='" + role + "'}";
+    public String getLogin() {
+        return login;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getRole() {
+        return role;
     }
 }

@@ -10,7 +10,26 @@ public class VehicleRentalSystem {
         UserRepository userRepository = new UserRepository();
         RentalRepository rentalRepository = new RentalRepository();
         AuthService authService = new AuthService(userRepository);
-       Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("--- System Wypożyczalni ---");
+        System.out.println("1. Logowanie");
+        System.out.println("2. Rejestracja");
+        System.out.print("Wybierz opcję: ");
+        int option = scanner.nextInt();
+        scanner.nextLine(); // zjedz enter
+
+        if (option == 2) {
+            System.out.print("Podaj login: ");
+            String newLogin = scanner.nextLine();
+            System.out.print("Podaj hasło: ");
+            String newPassword = scanner.nextLine();
+            System.out.print("Podaj rolę (USER lub ADMIN): ");
+            String role = scanner.nextLine().toUpperCase();
+            authService.register(newLogin, newPassword, role);
+            System.out.println("Użytkownik zarejestrowany. Zaloguj się.");
+        }
+
         System.out.println("\n--- Logowanie do systemu ---");
         System.out.print("Podaj login: ");
         String login = scanner.next();
@@ -36,7 +55,7 @@ public class VehicleRentalSystem {
             System.out.print("Wybierz opcję: ");
 
             int choice = scanner.nextInt();
-            scanner.nextLine();
+            scanner.nextLine(); // zjedz enter
             switch (choice) {
                 case 1:
                     List<Vehicle> all = vehicleRepository.getVehicles();

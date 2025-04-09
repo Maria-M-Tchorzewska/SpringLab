@@ -1,71 +1,54 @@
 package org.example.cars;
 
 import com.google.gson.reflect.TypeToken;
-import org.mindrot.jbcrypt.BCrypt;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
-public class UserRepository implements IUserRepository {
-    private static final String FILE_NAME = "users.json";
+public class UserRepository {
     private final List<User> users = new ArrayList<>();
-    private final JsonFileStorage<User> storage;
+    private final String FILE_PATH = "users.json";
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public UserRepository() {
-        Type listType = new TypeToken<List<User>>() {}.getType();
-        this.storage = new JsonFileStorage<>(FILE_NAME, listType);
         load();
-        if (users.isEmpty()) {
-            generateDefaultUsers();
-        }
-
     }
 
-    @Override
     public User getUser(String login) {
         return users.stream()
-                .filter(u -> u.getLogin().equalsIgnoreCase(login))
+                .filter(u -> u.getLogin().equals(login))
                 .findFirst()
                 .orElse(null);
     }
 
-    @Override
     public List<User> getUsers() {
-        return new ArrayList<>(users);
+        return users;
     }
 
-    @Override
     public void save() {
-        storage.save(users);
-        System.out.println("Użytkownicy zapisani do JSON-a.");
-    }
-
-    private void load() {
-        users.clear();
-        users.addAll(storage.load());
-        System.out.println("Użytkownicy wczytani z JSON-a.");
-    }
-
-    private void generateDefaultUsers() {
-        users.add(new User(UUID.randomUUID().toString(), "admin", hashPassword("admin123"), "ADMIN"));
-        users.add(new User(UUID.randomUUID().toString(), "user1", hashPassword("123"), "USER"));
-        users.add(new User(UUID.randomUUID().toString(), "user2", hashPassword("1234"), "USER"));
-        save();
-    }
-
-    private String hashPassword(String password) {
-        return BCrypt.hashpw(password, BCrypt.gensalt());
-    }
-
-    public boolean login(String login, String plainPassword) {
-        User user = getUser(login);
-        if (user != null && BCrypt.checkpw(plainPassword, user.getPassword())) {
-            System.out.println("Zalogowano pomyślnie.");
-            return true;
+        try (FileWriter writer = new FileWriter(FILE_PATH)) {
+            gson.toJson(users, writer);
+        } catch (IOException e) {
+            System.out.println("Błąd zapisu użytkowników: " + e.getMessage());
         }
-        System.out.println("Błędny login lub hasło.");
-        return false;
+    }
+
+    public void load() {
+        try (FileReader reader = new FileReader(FILE_PATH)) {
+            Type userListType = new TypeToken<ArrayList<User>>(){}.getType();
+            List<User> loadedUsers = gson.fromJson(reader, userListType);
+            if (loadedUsers != null) {
+                users.clear();
+                users.addAll(loadedUsers);
+            }
+        } catch (IOException e) {
+            System.out.println("Nie udało się załadować users");
+            save();
+        }
     }
 }
