@@ -1,49 +1,88 @@
 package org.example.cars;
 
+import java.util.Map;
 import java.util.Objects;
 
-public abstract class Vehicle {
-    private static int idCounter = 1;
-    protected final int id;
-    protected String brand;
-    protected String model;
-    protected int year;
-    protected double price;
-    protected boolean rented;
+public class Vehicle {
+    private String id;
+    private String category;
+    private String brand;
+    private String model;
+    private int year;
+    private String plate;
+    private Map<String, Object> attributes;
 
-    public Vehicle(String brand, String model, int year, double price) {
-        this.id = idCounter++;
+    public Vehicle(String id, String category, String brand, String model, int year, String plate, Map<String, Object> attributes) {
+        this.id = id;
+        this.category = category;
         this.brand = brand;
         this.model = model;
         this.year = year;
-        this.price = price;
-        this.rented = false;
+        this.plate = plate;
+        this.attributes = attributes;
     }
 
-    public int getId() { return id; }
-    public String getBrand() { return brand; }
-    public String getModel() { return model; }
-    public int getYear() { return year; }
-    public double getPrice() { return price; }
-    public boolean isRented() { return rented; }
+    public String getId() {
+        return id;
+    }
 
-    protected void setRented(boolean rented) { this.rented = rented; }
+    public String getCategory() {
+        return category;
+    }
 
-    public abstract String toCSV();
-    public abstract String toString();
-    public abstract void displayInfo();
+    public String getBrand() {
+        return brand;
+    }
 
-    // equals() - porównuje pojazdy na podstawie ID
+    public String getModel() {
+        return model;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public String getPlate() {
+        return plate;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+
+    public Object getAttribute(String key) {
+        return attributes.get(key);
+    }
+
+    public void addAttribute(String key, Object value) {
+        attributes.put(key, value);
+    }
+
+    public void removeAttribute(String key) {
+        attributes.remove(key);
+    }
+
+    public void displayInfo() {
+        System.out.println(this);
+    }
+
+    @Override
+    public String toString() {
+        return category + " - ID: " + id + ", " + brand + " " + model + ", " + year + ", Plate: " + plate + ", Attributes: " + attributes;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false; // Sprawdzenie typu
-
+        if (!(o instanceof Vehicle)) return false;
         Vehicle vehicle = (Vehicle) o;
-        return id == vehicle.id;
+        return Objects.equals(id, vehicle.id);
     }
 
-    //hashCode() - opiera się na id
     @Override
     public int hashCode() {
         return Objects.hash(id);

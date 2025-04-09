@@ -1,51 +1,77 @@
 package org.example.cars;
 
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class VehicleRentalSystem {
-    private static final IVehicleRepository repository = new VehicleRepository();
-    private static final UserRepository userRepository = new UserRepository();
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+        VehicleRepository vehicleRepository = new VehicleRepository();
+        UserRepository userRepository = new UserRepository();
+        RentalRepository rentalRepository = new RentalRepository();
+        AuthService authService = new AuthService(userRepository);
+       Scanner scanner = new Scanner(System.in);
+        System.out.println("\n--- Logowanie do systemu ---");
+        System.out.print("Podaj login: ");
+        String login = scanner.next();
+        System.out.print("Podaj hasło: ");
+        String password = scanner.next();
 
-        if (!authenticateUser(scanner)) {
+        User user = authService.login(login, password);
+        if (user == null) {
             System.out.println("Zamykanie systemu...");
             return;
         }
 
+        boolean isAdmin = "ADMIN".equals(user.getRole());
+
         while (true) {
             System.out.println("\n--- Wypożyczalnia Pojazdów ---");
-            System.out.println("1. Wyświetl dostępne pojazdy");
+            System.out.println("1. Wyświetl pojazdy");
             System.out.println("2. Wypożycz pojazd");
             System.out.println("3. Zwróć pojazd");
-            System.out.println("4. Dodaj nowy pojazd");
-            System.out.println("5. Wyjście");
+            if (isAdmin) System.out.println("4. Dodaj nowy pojazd");
+            if (isAdmin) System.out.println("5. Usuń pojazd");
+            System.out.println("0. Wyjście");
             System.out.print("Wybierz opcję: ");
 
             int choice = scanner.nextInt();
+            scanner.nextLine();
             switch (choice) {
                 case 1:
-                    List<Vehicle> vehicles = repository.getVehicles();
-                    for (Vehicle v : vehicles) {
-                        System.out.println(v);
-                    }
+                    List<Vehicle> all = vehicleRepository.getVehicles();
+                    List<Vehicle> visible = isAdmin ? all : all.stream()
+                            .filter(v -> !"true".equals(String.valueOf(v.getAttributes().get("rented"))))
+                            .collect(Collectors.toList());
+                    visible.forEach(System.out::println);
                     break;
                 case 2:
                     System.out.print("Podaj ID pojazdu do wypożyczenia: ");
                     int rentId = scanner.nextInt();
-                    repository.rentVehicle(rentId);
+                    rentalRepository.rentVehicle(String.valueOf(rentId), user.getId());
+                    Vehicle rentVehicle = vehicleRepository.getVehicleById(rentId);
+                    if (rentVehicle != null) rentVehicle.getAttributes().put("rented", true);
+                    vehicleRepository.save();
                     break;
                 case 3:
                     System.out.print("Podaj ID pojazdu do zwrotu: ");
                     int returnId = scanner.nextInt();
-                    repository.returnVehicle(returnId);
+                    rentalRepository.returnVehicle(String.valueOf(returnId), user.getId());
+                    Vehicle returnVehicle = vehicleRepository.getVehicleById(returnId);
+                    if (returnVehicle != null) returnVehicle.getAttributes().put("rented", false);
+                    vehicleRepository.save();
                     break;
                 case 4:
-                    addNewVehicle(scanner);
+                    if (!isAdmin) break;
+                    addNewVehicle(scanner, vehicleRepository);
                     break;
                 case 5:
+                    if (!isAdmin) break;
+                    System.out.print("Podaj ID pojazdu do usunięcia: ");
+                    int deleteId = scanner.nextInt();
+                    vehicleRepository.removeVehicle(deleteId);
+                    break;
+                case 0:
                     System.out.println("Zamykanie systemu...");
                     scanner.close();
                     return;
@@ -55,36 +81,25 @@ public class VehicleRentalSystem {
         }
     }
 
-    private static boolean authenticateUser(Scanner scanner) {
-        System.out.println("\n--- Logowanie do systemu ---");
-        System.out.print("Podaj login: ");
-        String login = scanner.next();
-        System.out.print("Podaj hasło: ");
-        String password = scanner.next();
-
-        return userRepository.login(login, password);
-    }
-
-    private static void addNewVehicle(Scanner scanner) {
+    private static void addNewVehicle(Scanner scanner, VehicleRepository vehicleRepository) {
+        System.out.print("Podaj ID: ");
+        String id = scanner.next();
+        System.out.print("Podaj kategorię: ");
+        String category = scanner.next();
         System.out.print("Podaj markę: ");
         String brand = scanner.next();
         System.out.print("Podaj model: ");
         String model = scanner.next();
         System.out.print("Podaj rok: ");
         int year = scanner.nextInt();
-        System.out.print("Podaj cenę: ");
-        double price = scanner.nextDouble();
-        System.out.print("Podaj typ pojazdu: ");
-        String type = scanner.next();
+        System.out.print("Podaj tablicę rejestracyjną: ");
+        String plate = scanner.next();
 
-        if (type.equalsIgnoreCase("Car")) {
-            repository.addVehicle(new Car(brand, model, year, price));
-        } else if (type.equalsIgnoreCase("Motorcycle")) {
-            System.out.print("Podaj kategorię motocykla: ");
-            String category = scanner.next();
-            repository.addVehicle(new Motorcycle(brand, model, year, price, category));
-        } else {
-            System.out.println("Niepoprawny typ pojazdu!");
-        }
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("rented", false);
+
+        Vehicle vehicle = new Vehicle(id, category, brand, model, year, plate, attributes);
+        vehicleRepository.addVehicle(vehicle);
     }
+
 }

@@ -1,139 +1,110 @@
 package org.example.cars;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.*;
 
 public class VehicleRepository implements IVehicleRepository {
-    private static final String FILE_NAME = "vehicles.csv";
-    private static final List<Vehicle> vehicles = new ArrayList<>();
+    private static final String FILE_NAME = "vehicles.json";
+    private final List<Vehicle> vehicles = new ArrayList<>();
+    private final JsonFileStorage<Vehicle> storage;
+    private final RentalRepository rentalRepository;
 
     public VehicleRepository() {
+        Type listType = new TypeToken<List<Vehicle>>() {}.getType();
+        this.storage = new JsonFileStorage<>(FILE_NAME, listType);
+        this.rentalRepository = new RentalRepository();
         load();
     }
 
-    public static Vehicle getVehicleById(int vehicleId) {
+    public Vehicle getVehicleById(int vehicleId) {
         return vehicles.stream()
-                .filter(v -> v.getId() == vehicleId)
+                .filter(v -> {
+                    try {
+                        return Integer.parseInt(v.getId()) == vehicleId;
+                    } catch (NumberFormatException e) {
+                        return false;
+                    }
+                })
                 .findFirst()
                 .orElse(null);
     }
 
-
     @Override
     public void rentVehicle(int vehicleId) {
-        for (Vehicle v : vehicles) {
-            if (v.getId() == vehicleId && !v.isRented()) {
-                v.setRented(true); //zmiana mozliwosci
-                save();
-                return;
-            }
+        Vehicle v = getVehicleById(vehicleId);
+        if (v == null) {
+            System.out.println("Nie znaleziono pojazdu o ID: " + vehicleId);
+            return;
         }
-        System.out.println("Pojazd o ID " + vehicleId + " nie istnieje lub jest już wynajęty.");
+
+        if ("true".equals(String.valueOf(v.getAttribute("rented")))) {
+            System.out.println("Pojazd już wypożyczony.");
+            return;
+        }
+
+        String userId = "debug-user";
+
+        v.addAttribute("rented", true);
+        rentalRepository.rentVehicle(v.getId(), userId);
+        save();
     }
 
     @Override
     public void returnVehicle(int vehicleId) {
-        for (Vehicle v : vehicles) {
-            if (v.getId() == vehicleId && v.isRented()) {
-                v.setRented(false); //zmiana mozliwosci
-                save();
-                return;
-            }
+        Vehicle v = getVehicleById(vehicleId);
+        if (v == null) {
+            System.out.println("Nie znaleziono pojazdu o ID: " + vehicleId);
+            return;
         }
-        System.out.println("Pojazd o ID " + vehicleId + " nie istnieje lub nie był wynajęty.");
+
+        if (!"true".equals(String.valueOf(v.getAttribute("rented")))) {
+            System.out.println("Pojazd nie jest wypożyczony.");
+            return;
+        }
+
+        String userId = "debug-user";
+        rentalRepository.returnVehicle(v.getId(), userId);
+        v.addAttribute("rented", false);
+        save();
     }
 
     @Override
     public List<Vehicle> getVehicles() {
-        return Collections.unmodifiableList(vehicles); //zabezpieczenie przed modyfikacją
+        return Collections.unmodifiableList(vehicles);
     }
 
     @Override
     public void save() {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
-            for (Vehicle v : vehicles) {
-                if (v instanceof Car) {
-                    writer.println(v.getId() + ";" + v.brand + ";" + v.model + ";" + v.year + ";" + v.price + ";" + v.isRented() + ";Car");
-                } else if (v instanceof Motorcycle) {
-                    writer.println(v.getId() + ";" + v.brand + ";" + v.model + ";" + v.year + ";" + v.price + ";" + v.isRented() + ";Motorcycle;" + ((Motorcycle) v).getCategory());
-                }
-            }
-            System.out.println("Dane zapisane do pliku.");
-        } catch (IOException e) {
-            System.out.println("Błąd zapisu pliku: " + e.getMessage());
-        }
+        storage.save(vehicles);
+        System.out.println("Zapisano pojazdy do JSON-a.");
     }
 
     @Override
     public void load() {
-        File file = new File(FILE_NAME);
-        if (!file.exists()) {
-            System.out.println("Brak pliku, generowanie domyślnych pojazdów...");
-            generateDefaultVehicles();
-            return;
-        }
-
         vehicles.clear();
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] data = line.split(";");
-                if (data.length >= 7) {
-                    int id = Integer.parseInt(data[0]);
-                    String brand = data[1];
-                    String model = data[2];
-                    int year = Integer.parseInt(data[3]);
-                    double price = Double.parseDouble(data[4]);
-                    boolean rented = Boolean.parseBoolean(data[5]);
-                    String type = data[6];
-
-                    Vehicle vehicle;
-                    if (type.equals("Car")) {
-                        vehicle = new Car(brand, model, year, price);
-                    } else if (type.equals("Motorcycle")) {
-                        String category = data[7];
-                        vehicle = new Motorcycle(brand, model, year, price, category);
-                    } else {
-                        continue;
-                    }
-                    vehicle.setRented(rented);
-                    vehicles.add(vehicle);
-                }
-            }
-            System.out.println("Dane wczytane z pliku.");
-        } catch (IOException e) {
-            System.out.println("Błąd odczytu pliku: " + e.getMessage());
-        }
+        vehicles.addAll(storage.load());
+        System.out.println("Wczytano pojazdy z JSON-a.");
     }
 
+    @Override
     public void addVehicle(Vehicle vehicle) {
+        if (vehicle.getAttribute("rented") == null) {
+            vehicle.addAttribute("rented", false);
+        }
         vehicles.add(vehicle);
-        save();
-    }
-
-    private void generateDefaultVehicles() {
-        vehicles.add(new Car("Toyota", "Corolla", 2022, 25000));
-        vehicles.add(new Car("Honda", "Civic", 2021, 23000));
-        vehicles.add(new Motorcycle("Yamaha", "R1", 2022, 20000, "Sport"));
-        vehicles.add(new Motorcycle("Harley-Davidson", "Street 750", 2021, 15000, "Cruiser"));
         save();
     }
 
     @Override
     public boolean removeVehicle(int vehicleId) {
-        Vehicle vehicleToRemove = vehicles.stream()
-                .filter(v -> v.getId() == vehicleId)
-                .findFirst()
-                .orElse(null);
-
-        if (vehicleToRemove != null) {
-            vehicles.remove(vehicleToRemove);
+        Vehicle v = getVehicleById(vehicleId);
+        if (v != null) {
+            vehicles.remove(v);
             save();
             return true;
         }
         return false;
     }
-
 }

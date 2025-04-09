@@ -6,10 +6,9 @@ public interface IVehicleRepository {
     void rentVehicle(int vehicleId);
     void returnVehicle(int vehicleId);
     List<Vehicle> getVehicles();
-    void save(); // zmiany do pliku
-    void load(); // pojazdy z pliku
-
+    void save();
+    void load();
     void addVehicle(Vehicle vehicle);
-
     boolean removeVehicle(int vehicleId);
+    Vehicle getVehicleById(int vehicleId);
 }
