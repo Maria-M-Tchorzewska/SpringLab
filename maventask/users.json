@@ -22,5 +22,11 @@
     "login": "kafka",
     "password": "$2a$10$ZIb8YFJAv8Dt2J8bbaDMuuW9eaPc54/t7SwD0t3qGxp8/pDXX3uOG",
     "role": "ADMIN"
+  },
+  {
+    "id": "cbcff899-8352-4d0c-95f5-e99cc9300476",
+    "login": "admin",
+    "password": "$2a$10$GBaauq6rKt.wFWX82n5ObevUFn0KVrCqbK/ECMMuA.PIlXWAiH6Ny",
+    "role": "ADMIN"
   }
 ]
