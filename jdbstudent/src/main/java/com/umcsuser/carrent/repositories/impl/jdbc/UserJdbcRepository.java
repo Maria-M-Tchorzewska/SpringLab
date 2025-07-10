@@ -41,8 +41,31 @@ public class UserJdbcRepository implements UserRepository {
 
     @Override
     public Optional<User> findByLogin(String login) {
+        String sql = "SELECT * FROM users WHERE login = ?";
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            stmt.setString(1, login);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    User user = new User(
+                            String.valueOf(rs.getInt("id")),
+                            rs.getString("login"),
+                            rs.getString("password"),
+                            rs.getString("role")
+                    );
+                    return Optional.of(user);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding user by login", e);
+        }
+
         return Optional.empty();
     }
+
 
     @Override
     public List<User> findAll() {
@@ -74,16 +97,22 @@ public class UserJdbcRepository implements UserRepository {
             user.setId(UUID.randomUUID().toString());
         }
 
-        String sql = "INSERT INTO users (id, login, password, role) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO users (login, password, role) VALUES (?, ?, ?)";
 
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, user.getId());
-            stmt.setString(2, user.getLogin());
-            stmt.setString(3, user.getPassword());
-            stmt.setString(4, user.getRole());
+            stmt.setString(1, user.getLogin());
+            stmt.setString(2, user.getPassword());
+            stmt.setString(3, user.getRole());
             stmt.executeUpdate();
+
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    user.setId(String.valueOf(generatedKeys.getInt(1)));
+                }
+            }
+
         } catch (SQLException e) {
             throw new RuntimeException("Error saving user", e);
         }

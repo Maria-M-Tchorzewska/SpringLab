@@ -10,7 +10,7 @@ import java.util.Map;
 @Builder
 public class Vehicle {
 
-    private String id;
+    private Integer id;
     private String category;
     private String brand;
     private String model;

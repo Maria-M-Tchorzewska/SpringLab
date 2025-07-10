@@ -25,17 +25,27 @@ public class VehicleJsonRepository implements VehicleRepository {
 
     @Override
     public Optional<Vehicle> findById(String id) {
-        return vehicles.stream()
-                .filter(v -> v.getId().equals(id))
-                .findFirst();
+        try {
+            int vehicleId = Integer.parseInt(id);
+            return vehicles.stream()
+                    .filter(v -> Objects.equals(v.getId(), vehicleId))
+                    .findFirst();
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
     public Vehicle save(Vehicle vehicle) {
-        if (vehicle.getId() == null || vehicle.getId().isBlank()) {
-            vehicle.setId(UUID.randomUUID().toString());
+        if (vehicle.getId() == null) {
+            int maxId = vehicles.stream()
+                    .map(Vehicle::getId)
+                    .filter(Objects::nonNull)
+                    .max(Comparator.naturalOrder())
+                    .orElse(0);
+            vehicle.setId(maxId + 1);
         } else {
-            deleteById(vehicle.getId());
+            deleteById(String.valueOf(vehicle.getId()));
         }
         vehicles.add(vehicle);
         storage.save(vehicles);
@@ -44,7 +54,11 @@ public class VehicleJsonRepository implements VehicleRepository {
 
     @Override
     public void deleteById(String id) {
-        vehicles.removeIf(v -> v.getId().equals(id));
-        storage.save(vehicles);
+        try {
+            int vehicleId = Integer.parseInt(id);
+            vehicles.removeIf(v -> Objects.equals(v.getId(), vehicleId));
+            storage.save(vehicles);
+        } catch (NumberFormatException ignored) {
+        }
     }
 }

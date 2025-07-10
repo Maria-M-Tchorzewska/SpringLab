@@ -8,7 +8,6 @@ import com.umcsuser.carrent.db.JdbcConnectionManager;
 import com.umcsuser.carrent.models.Vehicle;
 import com.umcsuser.carrent.repositories.VehicleRepository;
 
-
 public class VehicleJdbcRepository implements VehicleRepository {
 
     private final Gson gson = new Gson();
@@ -16,7 +15,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
     @Override
     public List<Vehicle> findAll() {
         List<Vehicle> list = new ArrayList<>();
-        String sql = "SELECT * FROM vehicle";
+        String sql = "SELECT * FROM vehicles";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
              PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -26,7 +25,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 Map<String, Object> attributes = gson.fromJson(attrJson, new TypeToken<Map<String, Object>>(){}.getType());
 
                 Vehicle vehicle = Vehicle.builder()
-                        .id(rs.getString("id"))
+                        .id(rs.getInt("id"))
                         .category(rs.getString("category"))
                         .brand(rs.getString("brand"))
                         .model(rs.getString("model"))
@@ -45,18 +44,18 @@ public class VehicleJdbcRepository implements VehicleRepository {
 
     @Override
     public Optional<Vehicle> findById(String id) {
-        String sql = "SELECT * FROM vehicle WHERE id = ?";
+        String sql = "SELECT * FROM vehicles WHERE id = ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
 
-            stmt.setString(1, id);
+            stmt.setInt(1, Integer.parseInt(id));
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     String attrJson = rs.getString("attributes");
                     Map<String, Object> attributes = gson.fromJson(attrJson, new TypeToken<Map<String, Object>>(){}.getType());
 
                     Vehicle vehicle = Vehicle.builder()
-                            .id(rs.getString("id"))
+                            .id(rs.getInt("id"))
                             .category(rs.getString("category"))
                             .brand(rs.getString("brand"))
                             .model(rs.getString("model"))
@@ -76,41 +75,37 @@ public class VehicleJdbcRepository implements VehicleRepository {
 
     @Override
     public Vehicle save(Vehicle vehicle) {
-        if (vehicle.getId() == null || vehicle.getId().isBlank()) {
-            vehicle.setId(UUID.randomUUID().toString());
-        }
-
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection()) {
 
-            String checkSql = "SELECT COUNT(*) FROM vehicle WHERE id = ?";
-            try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
-                checkStmt.setString(1, vehicle.getId());
-                ResultSet rs = checkStmt.executeQuery();
-                if (rs.next() && rs.getInt(1) > 0) {
-                    String updateSql = "UPDATE vehicle SET category = ?, brand = ?, model = ?, year = ?, plate = ?, price = ?, attributes = ?::jsonb WHERE id = ?";
-                    try (PreparedStatement updateStmt = connection.prepareStatement(updateSql)) {
-                        updateStmt.setString(1, vehicle.getCategory());
-                        updateStmt.setString(2, vehicle.getBrand());
-                        updateStmt.setString(3, vehicle.getModel());
-                        updateStmt.setInt(4, vehicle.getYear());
-                        updateStmt.setString(5, vehicle.getPlate());
-                        updateStmt.setDouble(6, vehicle.getPrice());
-                        updateStmt.setString(7, gson.toJson(vehicle.getAttributes()));
-                        updateStmt.setString(8, vehicle.getId());
-                        updateStmt.executeUpdate();
-                    }
-                } else {
-                    String insertSql = "INSERT INTO vehicle (id, category, brand, model, year, plate, price, attributes) VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb)";
-                    try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
-                        insertStmt.setString(1, vehicle.getId());
-                        insertStmt.setString(2, vehicle.getCategory());
-                        insertStmt.setString(3, vehicle.getBrand());
-                        insertStmt.setString(4, vehicle.getModel());
-                        insertStmt.setInt(5, vehicle.getYear());
-                        insertStmt.setString(6, vehicle.getPlate());
-                        insertStmt.setDouble(7, vehicle.getPrice());
-                        insertStmt.setString(8, gson.toJson(vehicle.getAttributes()));
-                        insertStmt.executeUpdate();
+            if (vehicle.getId() != null) {
+                String updateSql = "UPDATE vehicles SET category = ?, brand = ?, model = ?, year = ?, plate = ?, price = ?, attributes = ?::jsonb WHERE id = ?";
+                try (PreparedStatement updateStmt = connection.prepareStatement(updateSql)) {
+                    updateStmt.setString(1, vehicle.getCategory());
+                    updateStmt.setString(2, vehicle.getBrand());
+                    updateStmt.setString(3, vehicle.getModel());
+                    updateStmt.setInt(4, vehicle.getYear());
+                    updateStmt.setString(5, vehicle.getPlate());
+                    updateStmt.setDouble(6, vehicle.getPrice());
+                    updateStmt.setString(7, gson.toJson(vehicle.getAttributes()));
+                    updateStmt.setInt(8, vehicle.getId());
+                    updateStmt.executeUpdate();
+                }
+            } else {
+                String insertSql = "INSERT INTO vehicles (category, brand, model, year, plate, price, attributes) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)";
+                try (PreparedStatement insertStmt = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                    insertStmt.setString(1, vehicle.getCategory());
+                    insertStmt.setString(2, vehicle.getBrand());
+                    insertStmt.setString(3, vehicle.getModel());
+                    insertStmt.setInt(4, vehicle.getYear());
+                    insertStmt.setString(5, vehicle.getPlate());
+                    insertStmt.setDouble(6, vehicle.getPrice());
+                    insertStmt.setString(7, gson.toJson(vehicle.getAttributes()));
+                    insertStmt.executeUpdate();
+
+                    try (ResultSet generatedKeys = insertStmt.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            vehicle.setId(generatedKeys.getInt(1));
+                        }
                     }
                 }
             }
@@ -121,18 +116,16 @@ public class VehicleJdbcRepository implements VehicleRepository {
         return vehicle;
     }
 
-
     @Override
     public void deleteById(String id) {
-        String sql = "DELETE FROM vehicle WHERE id = ?";
+        String sql = "DELETE FROM vehicles WHERE id = ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
 
-            stmt.setString(1, id);
+            stmt.setInt(1, Integer.parseInt(id));
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred", e);
         }
     }
 }
-
